@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and progress",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["teacher", "admin"] },
+        "competencyLevel": { "type": "string", "enum": ["Beginner", "Explorer", "Practitioner", "Integrator", "Advanced"] },
+        "points": { "type": "integer" },
+        "completedTasksCount": { "type": "integer" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "plansGenerated": { "type": "integer" },
+            "tasksGenerated": { "type": "integer" },
+            "promptsAnalyzed": { "type": "integer" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "UserTaskProgress": {
+      "title": "Practical Task Progress",
+      "description": "Tracks completion of practical tasks",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "taskId": { "type": "string" },
+        "status": { "type": "string", "enum": ["completed", "failed"] },
+        "score": { "type": "integer" },
+        "feedback": { "type": "string" },
+        "detailed_analysis": { "type": "object" },
+        "answer": { "type": "string" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "LessonPlan": {
+      "title": "Short-term Lesson Plan (КМЖ)",
+      "description": "Generated lesson plan in Kazakhstan format",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "grade": { "type": "string" },
+        "subject": { "type": "string" },
+        "book": { "type": "string" },
+        "unit": { "type": "string" },
+        "topic": { "type": "string" },
+        "content": { "type": "object" },
+        "htmlContent": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "GeneratedTask": {
+      "title": "Generated Activity/Task",
+      "description": "Content for student activities",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "topic": { "type": "string" },
+        "bloomLevel": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "UserPrompt": {
+      "title": "Prompt Analysis",
+      "description": "History of prompt engineering practice",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "prompt": { "type": "string" },
+        "qualityScore": { "type": "integer" },
+        "feedback": { "type": "string" },
+        "suggestions": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "users/{userId}/lessonPlans/{planId}": {
+      "schema": "LessonPlan",
+      "description": "User's generated lesson plans"
+    },
+    "users/{userId}/generatedTasks/{taskId}": {
+      "schema": "GeneratedTask",
+      "description": "User's generated tasks"
+    },
+    "users/{userId}/prompts/{promptId}": {
+      "schema": "UserPrompt",
+      "description": "User's prompt engineering history"
+    },
+    "users/{userId}/taskProgress/{taskId}": {
+      "schema": "UserTaskProgress",
+      "description": "User's practical task completion status"
+    }
+  }
+}

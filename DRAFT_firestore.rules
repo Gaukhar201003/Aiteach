@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    // Admin check - based on the user email provided in the log
+    function isAdmin() { return isVerified() && request.auth.token.email == "gauhartoktamys1@gmail.com"; }
+
+    // Validation Blueprint for User
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 200 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             data.role in ['teacher', 'admin'] &&
+             data.competencyLevel in ['Beginner', 'Explorer', 'Practitioner', 'Integrator', 'Advanced'] &&
+             data.createdAt is string &&
+             data.stats is map &&
+             data.stats.plansGenerated is number &&
+             data.stats.tasksGenerated is number &&
+             data.stats.promptsAnalyzed is number;
+    }
+
+    match /users/{userId} {
+      // Identity Protection
+      allow get: if isOwner(userId) || isAdmin();
+      
+      // Strict creation
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      
+      // Tiered Identity Logic for Updates
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && (
+        isAdmin() || (
+          // Owner can only modify specific public/profile fields
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'competencyLevel', 'stats', 'updatedAt']) &&
+          incoming().uid == existing().uid &&
+          incoming().email == existing().email &&
+          incoming().role == existing().role
+        )
+      );
+
+      // Sub-resource protection (The Master Gate)
+      match /lessonPlans/{planId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /generatedTasks/{taskId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /prompts/{promptId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+  }
+}
